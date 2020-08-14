@@ -1,0 +1,16 @@
+[package]
+name = "http1-spec"
+version = "0.1.0"
+authors = ["vkill <vkill.net@gmail.com>"]
+edition = "2018"
+description = "http1 spec."
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/bk-rs/http1-spec"
+homepage = "https://github.com/bk-rs/http1-spec"
+documentation = "https://docs.rs/http1-spec"
+keywords = []
+categories = []
+readme = "README.md"
+
+[dependencies]
+http = { version = "0.2", default-features = false, features = [] }
