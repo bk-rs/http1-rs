@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::{self, BufRead};
+use std::num;
 use std::result;
 
 //
@@ -14,6 +15,10 @@ pub enum BodyParseOutput {
 #[derive(Debug)]
 pub enum BodyParseError {
     ReadError(io::Error),
+    TooLongChunksOfLength,
+    InvalidChunksOfLength(Option<num::ParseIntError>),
+    TooLongChunksOfCRLF,
+    InvalidCRLF,
 }
 impl fmt::Display for BodyParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

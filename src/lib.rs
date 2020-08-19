@@ -1,5 +1,6 @@
 pub mod body_framing;
 pub mod body_parser;
+pub mod chunked_body_parser;
 pub mod content_length_body_parser;
 pub mod head_parser;
 pub mod head_renderer;
