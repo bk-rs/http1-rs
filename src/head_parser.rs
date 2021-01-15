@@ -165,7 +165,7 @@ pub trait HeadParser {
         take.set_limit(config.get_header_max_len() as u64 + end_bytes_len as u64);
         let n = take
             .read_until(LF, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -183,7 +183,7 @@ pub trait HeadParser {
         // TODO, valid HEADERS_MAX_LEN
 
         //
-        if buf[..n - end_bytes_len].len() == 0 {
+        if buf[..n - end_bytes_len].is_empty() {
             return Ok(Some((true, n)));
         }
 
@@ -195,10 +195,10 @@ pub trait HeadParser {
             n_left_whitespace += 1;
         }
 
-        let header_name = HeaderName::from_bytes(header_name)
-            .map_err(|err| HeadParseError::InvalidHeaderName(err))?;
+        let header_name =
+            HeaderName::from_bytes(header_name).map_err(HeadParseError::InvalidHeaderName)?;
         let header_value = HeaderValue::from_bytes(&header_value[n_left_whitespace..])
-            .map_err(|err| HeadParseError::InvalidHeaderValue(err))?;
+            .map_err(HeadParseError::InvalidHeaderValue)?;
 
         headers.insert(header_name, header_value);
         Ok(Some((false, n)))
@@ -215,7 +215,7 @@ pub trait HeadParser {
         take.set_limit(HTTP_VERSION_LEN as u64 + end_bytes_len as u64);
         let n = take
             .read_until(SP, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -242,7 +242,7 @@ pub trait HeadParser {
         take.set_limit(STATUS_CODE_LEN as u64 + end_bytes_len as u64);
         let n = take
             .read_until(SP, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -254,7 +254,7 @@ pub trait HeadParser {
             }
         }
         let status_code = StatusCode::from_bytes(&buf[..n - end_bytes_len])
-            .map_err(|err| HeadParseError::InvalidStatusCode(err))?;
+            .map_err(HeadParseError::InvalidStatusCode)?;
 
         Ok(Some((status_code, n)))
     }
@@ -268,7 +268,7 @@ pub trait HeadParser {
         take.set_limit(config.get_reason_phrase_max_len() as u64 + end_bytes_len as u64);
         let n = take
             .read_until(LF, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -282,7 +282,7 @@ pub trait HeadParser {
         if !buf[..n - 1].ends_with(&[CR]) {
             return Err(HeadParseError::InvalidCRLF);
         }
-        let reason_phrase: ReasonPhrase = if buf[..n - end_bytes_len].len() == 0 {
+        let reason_phrase: ReasonPhrase = if buf[..n - end_bytes_len].is_empty() {
             None
         } else {
             Some(buf[..n - end_bytes_len].to_vec())
@@ -303,7 +303,7 @@ pub trait HeadParser {
         take.set_limit(config.get_method_max_len() as u64 + end_bytes_len as u64);
         let n = take
             .read_until(SP, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -314,8 +314,8 @@ pub trait HeadParser {
                 return Ok(None);
             }
         }
-        let method = Method::from_bytes(&buf[..n - end_bytes_len])
-            .map_err(|err| HeadParseError::InvalidMethod(err))?;
+        let method =
+            Method::from_bytes(&buf[..n - end_bytes_len]).map_err(HeadParseError::InvalidMethod)?;
 
         Ok(Some((method, n)))
     }
@@ -329,7 +329,7 @@ pub trait HeadParser {
         take.set_limit(config.get_uri_max_len() as u64 + end_bytes_len as u64);
         let n = take
             .read_until(SP, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }
@@ -342,7 +342,7 @@ pub trait HeadParser {
         }
         let uri = (&buf[..n - end_bytes_len])
             .try_into()
-            .map_err(|err| HeadParseError::InvalidUri(err))?;
+            .map_err(HeadParseError::InvalidUri)?;
 
         Ok(Some((uri, n)))
     }
@@ -355,7 +355,7 @@ pub trait HeadParser {
         take.set_limit(HTTP_VERSION_LEN as u64 + end_bytes_len as u64);
         let n = take
             .read_until(LF, buf)
-            .map_err(|err| HeadParseError::ReadError(err))?;
+            .map_err(HeadParseError::ReadError)?;
         if n < end_bytes_len {
             return Ok(None);
         }

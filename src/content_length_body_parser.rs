@@ -34,9 +34,7 @@ impl BodyParser for ContentLengthBodyParser {
     ) -> result::Result<BodyParseOutput, BodyParseError> {
         let mut take = r.take(self.length as u64);
 
-        let n = take
-            .read(body_buf)
-            .map_err(|err| BodyParseError::ReadError(err))?;
+        let n = take.read(body_buf).map_err(BodyParseError::ReadError)?;
         self.length -= n;
 
         if self.length == 0 {

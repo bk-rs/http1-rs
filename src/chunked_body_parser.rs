@@ -55,7 +55,7 @@ impl ChunkedBodyParser {
     pub fn with_data_buf(data_buf: Vec<u8>) -> Self {
         Self {
             length_buf: Vec::with_capacity(LENGTH_MAX_LEN),
-            data_buf: data_buf,
+            data_buf,
             ..Default::default()
         }
     }
@@ -81,7 +81,7 @@ impl BodyParser for ChunkedBodyParser {
                 self.length_buf.clear();
                 let n = take
                     .read_until(LF, &mut self.length_buf)
-                    .map_err(|err| BodyParseError::ReadError(err))?;
+                    .map_err(BodyParseError::ReadError)?;
 
                 if n < end_bytes_len {
                     return Ok(BodyParseOutput::Partial(parsed_num_bytes));
@@ -117,7 +117,7 @@ impl BodyParser for ChunkedBodyParser {
 
                 let n = take
                     .read(&mut self.data_buf)
-                    .map_err(|err| BodyParseError::ReadError(err))?;
+                    .map_err(BodyParseError::ReadError)?;
                 body_buf.extend_from_slice(&self.data_buf[..n]);
 
                 self.length -= n as u16;
@@ -139,7 +139,7 @@ impl BodyParser for ChunkedBodyParser {
                 self.length_buf.clear();
                 let n = take
                     .read_until(LF, &mut self.length_buf)
-                    .map_err(|err| BodyParseError::ReadError(err))?;
+                    .map_err(BodyParseError::ReadError)?;
                 if n < end_bytes_len {
                     return Ok(BodyParseOutput::Partial(parsed_num_bytes));
                 }

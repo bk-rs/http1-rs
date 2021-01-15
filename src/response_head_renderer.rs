@@ -40,11 +40,12 @@ impl HeadRenderer<(Parts, ReasonPhrase)> for ResponseHeadRenderer {
         buf.extend_from_slice(&[SP]);
         buf.extend_from_slice(parts.status.as_str().as_bytes());
         buf.extend_from_slice(&[SP]);
-        if let Some(reason_phrase) = reason_phrase.clone().or(parts
-            .status
-            .canonical_reason()
-            .map(|x| x.as_bytes().to_vec()))
-        {
+        if let Some(reason_phrase) = reason_phrase.or_else(|| {
+            parts
+                .status
+                .canonical_reason()
+                .map(|x| x.as_bytes().to_vec())
+        }) {
             buf.extend_from_slice(&reason_phrase[..]);
         }
         buf.extend_from_slice(CRLF);
