@@ -186,10 +186,12 @@ pub trait HeadParser {
         if buf[..n - end_bytes_len].is_empty() {
             return Ok(Some((true, n)));
         }
-
-        let mut header = buf[..n - end_bytes_len].split(|x| x == &COLON);
-        let header_name = header.next().ok_or(HeadParseError::InvalidHeader)?;
-        let header_value = header.next().ok_or(HeadParseError::InvalidHeader)?;
+        let header_colon_index = buf[..n - end_bytes_len]
+            .iter()
+            .position(|x| x == &COLON)
+            .ok_or(HeadParseError::InvalidHeader)?;
+        let header_name = &buf[..header_colon_index];
+        let header_value = &buf[header_colon_index + 1..n - end_bytes_len];
         let mut n_left_whitespace = 0_usize;
         if header_value[0] == SP {
             n_left_whitespace += 1;
@@ -375,5 +377,37 @@ pub trait HeadParser {
             _ => return Err(HeadParseError::InvalidHttpVersion),
         };
         Ok(Some((http_version, n)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::io::{self, BufReader, Cursor, Read};
+
+    use crate::request_head_parser::RequestHeadParser;
+
+    #[test]
+    fn parse_header_with_multi_colon() -> io::Result<()> {
+        let mut take = BufReader::new(Cursor::new(b"Foo: Bar:Bar\r\n")).take(0);
+        let mut buf = Vec::new();
+        let mut headers = HeaderMap::new();
+
+        RequestHeadParser::parse_header(
+            &mut take,
+            &mut buf,
+            &HeadParseConfig::default(),
+            &mut headers,
+        )?;
+
+        match headers.get("Foo") {
+            Some(header_value) => {
+                assert_eq!(header_value, "Bar:Bar");
+            }
+            None => assert!(false),
+        }
+
+        Ok(())
     }
 }
