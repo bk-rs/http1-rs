@@ -40,7 +40,7 @@ impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
     fn detect(&self) -> io::Result<BodyFraming> {
         let (headers, version) = *self;
 
-        if let Some(header_value) = headers.get(&CONTENT_LENGTH) {
+        if let Some(header_value) = headers.get(CONTENT_LENGTH) {
             let value_str = header_value
                 .to_str()
                 .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
@@ -51,7 +51,7 @@ impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
         }
 
         if version == &Version::HTTP_11 {
-            if let Some(header_value) = headers.get(&TRANSFER_ENCODING) {
+            if let Some(header_value) = headers.get(TRANSFER_ENCODING) {
                 if header_value == CHUNKED {
                     return Ok(BodyFraming::Chunked);
                 }
@@ -85,6 +85,12 @@ mod tests {
         assert_eq!(
             (&header_map, &Version::HTTP_11).detect()?,
             BodyFraming::Chunked
+        );
+
+        header_map.clear();
+        assert_eq!(
+            (&header_map, &Version::HTTP_11).detect()?,
+            BodyFraming::Neither
         );
 
         Ok(())
