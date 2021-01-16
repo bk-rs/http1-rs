@@ -61,3 +61,32 @@ impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
         Ok(BodyFraming::Neither)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detect() -> io::Result<()> {
+        let mut header_map = HeaderMap::new();
+
+        header_map.insert("Content-Length", "1".parse().unwrap());
+        assert_eq!(
+            (&header_map, &Version::HTTP_11).detect()?,
+            BodyFraming::ContentLength(1)
+        );
+
+        header_map.clear();
+        header_map.insert("Transfer-Encoding", "chunked".parse().unwrap());
+        assert_eq!(
+            (&header_map, &Version::HTTP_10).detect()?,
+            BodyFraming::Neither
+        );
+        assert_eq!(
+            (&header_map, &Version::HTTP_11).detect()?,
+            BodyFraming::Chunked
+        );
+
+        Ok(())
+    }
+}
