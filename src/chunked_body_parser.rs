@@ -1,6 +1,7 @@
-use std::io::{BufRead, Read};
-use std::result;
-use std::str;
+use std::{
+    io::{BufRead, Read},
+    str,
+};
 
 use crate::body_parser::{BodyParseError, BodyParseOutput, BodyParser};
 use crate::{CR, CRLF, LF};
@@ -69,7 +70,7 @@ impl BodyParser for ChunkedBodyParser {
         &mut self,
         r: &mut R,
         body_buf: &mut Vec<u8>,
-    ) -> result::Result<BodyParseOutput, BodyParseError> {
+    ) -> Result<BodyParseOutput, BodyParseError> {
         let mut take = r.take(0);
         let mut parsed_num_bytes = 0_usize;
 

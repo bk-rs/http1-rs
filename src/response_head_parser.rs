@@ -1,5 +1,4 @@
 use std::io::{BufRead, Read};
-use std::result;
 
 use http::{HeaderMap, HeaderValue, StatusCode, Version};
 
@@ -63,7 +62,7 @@ impl HeadParser for ResponseHeadParser {
         &self.http_version
     }
 
-    fn parse<R: BufRead>(&mut self, r: &mut R) -> result::Result<HeadParseOutput, HeadParseError> {
+    fn parse<R: BufRead>(&mut self, r: &mut R) -> Result<HeadParseOutput, HeadParseError> {
         let mut take = r.take(0);
         let mut parsed_num_bytes = 0_usize;
 

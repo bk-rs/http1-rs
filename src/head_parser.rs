@@ -1,8 +1,9 @@
-use std::cmp;
-use std::convert::TryInto;
-use std::fmt;
-use std::io::{self, BufRead, Take};
-use std::result;
+use std::{
+    cmp,
+    convert::TryInto,
+    fmt,
+    io::{self, BufRead, Take},
+};
 
 use http::{
     header::{HeaderName, InvalidHeaderName, InvalidHeaderValue},
@@ -28,7 +29,7 @@ pub type IsAllCompleted = bool;
 //
 //
 //
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HeadParseConfig {
     header_max_len: usize,
     headers_max_len: usize,
@@ -153,14 +154,14 @@ pub trait HeadParser {
     fn get_headers(&self) -> &HeaderMap<HeaderValue>;
     fn get_version(&self) -> &Version;
 
-    fn parse<R: BufRead>(&mut self, r: &mut R) -> result::Result<HeadParseOutput, HeadParseError>;
+    fn parse<R: BufRead>(&mut self, r: &mut R) -> Result<HeadParseOutput, HeadParseError>;
 
     fn parse_header<R: BufRead>(
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
         config: &HeadParseConfig,
         headers: &mut HeaderMap<HeaderValue>,
-    ) -> result::Result<Option<(IsAllCompleted, usize)>, HeadParseError> {
+    ) -> Result<Option<(IsAllCompleted, usize)>, HeadParseError> {
         let end_bytes_len = 2_usize;
         take.set_limit(config.get_header_max_len() as u64 + end_bytes_len as u64);
         let n = take
@@ -212,7 +213,7 @@ pub trait HeadParser {
     fn parse_http_version_for_response<R: BufRead>(
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
-    ) -> result::Result<Option<(Version, usize)>, HeadParseError> {
+    ) -> Result<Option<(Version, usize)>, HeadParseError> {
         let end_bytes_len = 1_usize;
         take.set_limit(HTTP_VERSION_LEN as u64 + end_bytes_len as u64);
         let n = take
@@ -239,7 +240,7 @@ pub trait HeadParser {
     fn parse_status_code<R: BufRead>(
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
-    ) -> result::Result<Option<(StatusCode, usize)>, HeadParseError> {
+    ) -> Result<Option<(StatusCode, usize)>, HeadParseError> {
         let end_bytes_len = 1_usize;
         take.set_limit(STATUS_CODE_LEN as u64 + end_bytes_len as u64);
         let n = take
@@ -265,7 +266,7 @@ pub trait HeadParser {
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
         config: &HeadParseConfig,
-    ) -> result::Result<Option<(ReasonPhrase, usize)>, HeadParseError> {
+    ) -> Result<Option<(ReasonPhrase, usize)>, HeadParseError> {
         let end_bytes_len = 2_usize;
         take.set_limit(config.get_reason_phrase_max_len() as u64 + end_bytes_len as u64);
         let n = take
@@ -300,7 +301,7 @@ pub trait HeadParser {
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
         config: &HeadParseConfig,
-    ) -> result::Result<Option<(Method, usize)>, HeadParseError> {
+    ) -> Result<Option<(Method, usize)>, HeadParseError> {
         let end_bytes_len = 1_usize;
         take.set_limit(config.get_method_max_len() as u64 + end_bytes_len as u64);
         let n = take
@@ -326,7 +327,7 @@ pub trait HeadParser {
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
         config: &HeadParseConfig,
-    ) -> result::Result<Option<(Uri, usize)>, HeadParseError> {
+    ) -> Result<Option<(Uri, usize)>, HeadParseError> {
         let end_bytes_len = 1_usize;
         take.set_limit(config.get_uri_max_len() as u64 + end_bytes_len as u64);
         let n = take
@@ -352,7 +353,7 @@ pub trait HeadParser {
     fn parse_http_version_for_request<R: BufRead>(
         take: &mut Take<R>,
         buf: &mut Vec<u8>,
-    ) -> result::Result<Option<(Version, usize)>, HeadParseError> {
+    ) -> Result<Option<(Version, usize)>, HeadParseError> {
         let end_bytes_len = 2_usize;
         take.set_limit(HTTP_VERSION_LEN as u64 + end_bytes_len as u64);
         let n = take

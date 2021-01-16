@@ -1,5 +1,4 @@
 use std::io::{BufRead, Read};
-use std::result;
 
 use crate::body_parser::{BodyParseError, BodyParseOutput, BodyParser};
 
@@ -31,7 +30,7 @@ impl BodyParser for ContentLengthBodyParser {
         &mut self,
         r: &mut R,
         body_buf: &mut Vec<u8>,
-    ) -> result::Result<BodyParseOutput, BodyParseError> {
+    ) -> Result<BodyParseOutput, BodyParseError> {
         let mut take = r.take(self.length as u64);
 
         let n = take.read(body_buf).map_err(BodyParseError::ReadError)?;

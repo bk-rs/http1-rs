@@ -1,7 +1,8 @@
-use std::fmt;
-use std::io::{self, BufRead};
-use std::num;
-use std::result;
+use std::{
+    fmt,
+    io::{self, BufRead},
+    num,
+};
 
 //
 //
@@ -39,5 +40,5 @@ pub trait BodyParser {
         &mut self,
         r: &mut R,
         body_buf: &mut Vec<u8>,
-    ) -> result::Result<BodyParseOutput, BodyParseError>;
+    ) -> Result<BodyParseOutput, BodyParseError>;
 }
