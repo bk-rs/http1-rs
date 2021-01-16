@@ -1,7 +1,7 @@
 use std::{
     cmp,
     convert::TryInto,
-    fmt,
+    error, fmt,
     io::{self, BufRead, Take},
 };
 
@@ -138,6 +138,7 @@ impl fmt::Display for HeadParseError {
         write!(f, "{:?}", self)
     }
 }
+impl error::Error for HeadParseError {}
 impl From<HeadParseError> for io::Error {
     fn from(err: HeadParseError) -> io::Error {
         io::Error::new(io::ErrorKind::InvalidInput, err.to_string())
@@ -385,12 +386,15 @@ pub trait HeadParser {
 mod tests {
     use super::*;
 
-    use std::io::{self, BufReader, Cursor, Read};
+    use std::{
+        error::Error,
+        io::{BufReader, Cursor, Read},
+    };
 
     use crate::request_head_parser::RequestHeadParser;
 
     #[test]
-    fn parse_header_with_multi_colon() -> io::Result<()> {
+    fn parse_header_with_multi_colon() -> Result<(), Box<dyn Error>> {
         let mut take = BufReader::new(Cursor::new(b"Foo: Bar:Bar\r\n")).take(0);
         let mut buf = Vec::new();
         let mut headers = HeaderMap::new();

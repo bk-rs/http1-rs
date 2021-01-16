@@ -1,5 +1,5 @@
 use std::{
-    fmt,
+    error, fmt,
     io::{self, BufRead},
     num,
 };
@@ -26,6 +26,7 @@ impl fmt::Display for BodyParseError {
         write!(f, "{:?}", self)
     }
 }
+impl error::Error for BodyParseError {}
 impl From<BodyParseError> for io::Error {
     fn from(err: BodyParseError) -> io::Error {
         io::Error::new(io::ErrorKind::InvalidInput, err.to_string())

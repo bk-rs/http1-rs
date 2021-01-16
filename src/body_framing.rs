@@ -66,8 +66,10 @@ impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
 mod tests {
     use super::*;
 
+    use std::error::Error;
+
     #[test]
-    fn detect() -> io::Result<()> {
+    fn detect() -> Result<(), Box<dyn Error>> {
         let mut header_map = HeaderMap::new();
 
         header_map.insert("Content-Length", "1".parse().unwrap());

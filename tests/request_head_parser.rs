@@ -1,4 +1,7 @@
-use std::io::{self, BufReader, Cursor};
+use std::{
+    error::Error,
+    io::{BufReader, Cursor},
+};
 
 use http::{Method, Version};
 
@@ -8,7 +11,7 @@ use http1_spec::{
 };
 
 #[test]
-fn simple() -> io::Result<()> {
+fn simple() -> Result<(), Box<dyn Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(b"GET / HTTP/1.1\r\n\r\n")))?;
@@ -23,7 +26,7 @@ fn simple() -> io::Result<()> {
 }
 
 #[test]
-fn with_headers() -> io::Result<()> {
+fn with_headers() -> Result<(), Box<dyn Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(
@@ -42,7 +45,7 @@ fn with_headers() -> io::Result<()> {
 }
 
 #[test]
-fn full() -> io::Result<()> {
+fn full() -> Result<(), Box<dyn Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let bytes = b"PUT /x HTTP/1.0\r\nHost: foo.com\r\nCookie: \r\n\r\n";

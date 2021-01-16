@@ -1,4 +1,7 @@
-use std::io::{self, BufReader, Cursor};
+use std::{
+    error::Error,
+    io::{BufReader, Cursor},
+};
 
 use http::{StatusCode, Version};
 
@@ -8,7 +11,7 @@ use http1_spec::{
 };
 
 #[test]
-fn simple() -> io::Result<()> {
+fn simple() -> Result<(), Box<dyn Error>> {
     let mut p = ResponseHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(b"HTTP/1.1 200 OK\r\n\r\n")))?;
@@ -23,7 +26,7 @@ fn simple() -> io::Result<()> {
 }
 
 #[test]
-fn reason_missing() -> io::Result<()> {
+fn reason_missing() -> Result<(), Box<dyn Error>> {
     let mut p = ResponseHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(b"HTTP/1.0 201 \r\n\r\n")))?;
@@ -38,7 +41,7 @@ fn reason_missing() -> io::Result<()> {
 }
 
 #[test]
-fn with_headers() -> io::Result<()> {
+fn with_headers() -> Result<(), Box<dyn Error>> {
     let mut p = ResponseHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(
@@ -56,7 +59,7 @@ fn with_headers() -> io::Result<()> {
 }
 
 #[test]
-fn full() -> io::Result<()> {
+fn full() -> Result<(), Box<dyn Error>> {
     let mut p = ResponseHeadParser::with_config(Default::default());
 
     let bytes = b"HTTP/1.1 202 Accepted\r\nFoo: bar\r\nX-V: 1\r\n\r\n";
