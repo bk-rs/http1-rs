@@ -3,8 +3,10 @@ use std::{
     str,
 };
 
-use crate::body_parser::{BodyParseError, BodyParseOutput, BodyParser};
-use crate::{CR, CRLF, LF};
+use crate::{
+    body_parser::{BodyParseError, BodyParseOutput, BodyParser},
+    CR, CRLF, LF,
+};
 
 //
 //
