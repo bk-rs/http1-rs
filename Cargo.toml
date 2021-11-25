@@ -1,6 +1,6 @@
 [package]
 name = "http1-spec"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 description = "http1 spec."
