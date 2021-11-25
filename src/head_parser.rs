@@ -410,7 +410,7 @@ mod tests {
             Some(header_value) => {
                 assert_eq!(header_value, "Bar:Bar");
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         Ok(())
