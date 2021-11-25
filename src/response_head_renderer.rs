@@ -3,7 +3,8 @@ use std::io;
 use http::{response::Parts, Response, Version};
 
 use crate::{
-    head_renderer::HeadRenderer, ReasonPhrase, COLON, CRLF, HTTP_VERSION_10, HTTP_VERSION_11, SP,
+    head_renderer::HeadRenderer, ReasonPhrase, COLON, CRLF, HTTP_VERSION_10, HTTP_VERSION_11,
+    HTTP_VERSION_2, HTTP_VERSION_3, SP,
 };
 
 #[derive(Default)]
@@ -33,6 +34,8 @@ impl HeadRenderer<(Parts, ReasonPhrase)> for ResponseHeadRenderer {
         let version_bytes = match parts.version {
             Version::HTTP_10 => HTTP_VERSION_10,
             Version::HTTP_11 => HTTP_VERSION_11,
+            Version::HTTP_2 => HTTP_VERSION_2,
+            Version::HTTP_3 => HTTP_VERSION_3,
             _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "unimplemented")),
         };
 

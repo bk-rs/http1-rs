@@ -2,7 +2,10 @@ use std::io;
 
 use http::{request::Parts, Request, Version};
 
-use crate::{head_renderer::HeadRenderer, COLON, CRLF, HTTP_VERSION_10, HTTP_VERSION_11, SP};
+use crate::{
+    head_renderer::HeadRenderer, COLON, CRLF, HTTP_VERSION_10, HTTP_VERSION_11, HTTP_VERSION_2,
+    HTTP_VERSION_3, SP,
+};
 
 #[derive(Default)]
 pub struct RequestHeadRenderer {}
@@ -27,6 +30,8 @@ impl HeadRenderer<Parts> for RequestHeadRenderer {
         let version_bytes = match parts.version {
             Version::HTTP_10 => HTTP_VERSION_10,
             Version::HTTP_11 => HTTP_VERSION_11,
+            Version::HTTP_2 => HTTP_VERSION_2,
+            Version::HTTP_3 => HTTP_VERSION_3,
             _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "unimplemented")),
         };
 

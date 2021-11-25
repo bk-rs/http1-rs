@@ -26,6 +26,38 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn version_http2() -> Result<(), Box<dyn Error>> {
+    let mut p = ResponseHeadParser::with_config(Default::default());
+
+    // curl https://www.google.com/ -v
+    let o = p.parse(&mut BufReader::new(Cursor::new(b"HTTP/2 200 OK\r\n\r\n")))?;
+    assert_eq!(o, HeadParseOutput::Completed(17));
+
+    assert_eq!(p.http_version, Version::HTTP_2);
+    assert_eq!(p.status_code, StatusCode::OK);
+    assert_eq!(p.reason_phrase, Some(b"OK"[..].to_vec()));
+    assert_eq!(p.headers.len(), 0);
+
+    Ok(())
+}
+
+#[test]
+fn version_http3() -> Result<(), Box<dyn Error>> {
+    let mut p = ResponseHeadParser::with_config(Default::default());
+
+    // curl-quiche-http3 https://quic.aiortc.org/ -v --http3
+    let o = p.parse(&mut BufReader::new(Cursor::new(b"HTTP/3 200 OK\r\n\r\n")))?;
+    assert_eq!(o, HeadParseOutput::Completed(17));
+
+    assert_eq!(p.http_version, Version::HTTP_3);
+    assert_eq!(p.status_code, StatusCode::OK);
+    assert_eq!(p.reason_phrase, Some(b"OK"[..].to_vec()));
+    assert_eq!(p.headers.len(), 0);
+
+    Ok(())
+}
+
+#[test]
 fn reason_missing() -> Result<(), Box<dyn Error>> {
     let mut p = ResponseHeadParser::with_config(Default::default());
 

@@ -13,7 +13,10 @@ use http::{
     HeaderMap, HeaderValue, Method, StatusCode, Uri, Version,
 };
 
-use crate::{ReasonPhrase, COLON, CR, HTTP_VERSION_10, HTTP_VERSION_11, LF, SP};
+use crate::{
+    ReasonPhrase, COLON, CR, HTTP_VERSION_10, HTTP_VERSION_11, HTTP_VERSION_2, HTTP_VERSION_20,
+    HTTP_VERSION_3, HTTP_VERSION_30, LF, SP,
+};
 
 //
 //
@@ -233,6 +236,8 @@ pub trait HeadParser {
         let http_version = match &buf[..n - end_bytes_len] {
             HTTP_VERSION_10 => Version::HTTP_10,
             HTTP_VERSION_11 => Version::HTTP_11,
+            HTTP_VERSION_20 | HTTP_VERSION_2 => Version::HTTP_2,
+            HTTP_VERSION_30 | HTTP_VERSION_3 => Version::HTTP_3,
             _ => return Err(HeadParseError::InvalidHttpVersion),
         };
         Ok(Some((http_version, n)))
@@ -376,6 +381,8 @@ pub trait HeadParser {
         let http_version = match &buf[..n - end_bytes_len] {
             HTTP_VERSION_10 => Version::HTTP_10,
             HTTP_VERSION_11 => Version::HTTP_11,
+            HTTP_VERSION_20 | HTTP_VERSION_2 => Version::HTTP_2,
+            HTTP_VERSION_30 | HTTP_VERSION_3 => Version::HTTP_3,
             _ => return Err(HeadParseError::InvalidHttpVersion),
         };
         Ok(Some((http_version, n)))
