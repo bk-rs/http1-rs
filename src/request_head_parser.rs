@@ -1,6 +1,6 @@
 use std::io::{BufRead, Read};
 
-use http::{HeaderMap, HeaderValue, Method, Uri, Version};
+use http::{request::Parts as RequestParts, HeaderMap, HeaderValue, Method, Request, Uri, Version};
 
 use crate::head_parser::{HeadParseConfig, HeadParseError, HeadParseOutput, HeadParser};
 
@@ -31,6 +31,22 @@ enum State {
 impl Default for State {
     fn default() -> Self {
         Self::Idle
+    }
+}
+
+impl RequestHeadParser {
+    pub fn to_request_parts(&self) -> RequestParts {
+        let (mut parts, _) = Request::new(()).into_parts();
+        parts.method = self.method.to_owned();
+        parts.uri = self.uri.to_owned();
+        parts.version = self.http_version;
+        parts.headers = self.headers.to_owned();
+        parts
+    }
+
+    pub fn to_request<B>(&self, body: B) -> Request<B> {
+        let parts = self.to_request_parts();
+        Request::from_parts(parts, body)
     }
 }
 
@@ -133,5 +149,32 @@ impl HeadParser for RequestHeadParser {
                 unreachable!()
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_request() {
+        let p = RequestHeadParser {
+            method: Method::POST,
+            uri: Uri::try_from("/path").unwrap(),
+            http_version: Version::HTTP_2,
+            headers: {
+                let mut h = HeaderMap::new();
+                h.insert("x-foo", "bar".parse().unwrap());
+                h
+            },
+            ..Default::default()
+        };
+
+        let req = p.to_request("body");
+        assert_eq!(req.method(), Method::POST);
+        assert_eq!(req.uri(), &Uri::try_from("/path").unwrap());
+        assert_eq!(req.version(), Version::HTTP_2);
+        assert_eq!(req.headers().get("x-foo").unwrap(), "bar");
+        assert_eq!(req.body(), &"body");
     }
 }

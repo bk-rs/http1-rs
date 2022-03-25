@@ -1,6 +1,8 @@
 use std::io::{BufRead, Read};
 
-use http::{HeaderMap, HeaderValue, StatusCode, Version};
+use http::{
+    response::Parts as ResponseParts, HeaderMap, HeaderValue, Response, StatusCode, Version,
+};
 
 use crate::{
     head_parser::{HeadParseConfig, HeadParseError, HeadParseOutput, HeadParser},
@@ -34,6 +36,22 @@ enum State {
 impl Default for State {
     fn default() -> Self {
         Self::Idle
+    }
+}
+
+impl ResponseHeadParser {
+    pub fn to_response_parts(&self) -> ResponseParts {
+        let (mut parts, _) = Response::new(()).into_parts();
+        parts.status = self.status_code;
+        parts.version = self.http_version;
+        parts.headers = self.headers.to_owned();
+        parts.extensions.insert(self.reason_phrase.to_owned());
+        parts
+    }
+
+    pub fn to_response<B>(&self, body: B) -> Response<B> {
+        let parts = self.to_response_parts();
+        Response::from_parts(parts, body)
     }
 }
 
@@ -136,5 +154,35 @@ impl HeadParser for ResponseHeadParser {
                 unreachable!()
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_response() {
+        let p = ResponseHeadParser {
+            http_version: Version::HTTP_2,
+            status_code: StatusCode::CREATED,
+            reason_phrase: Some(b"MyCreated".to_vec()),
+            headers: {
+                let mut h = HeaderMap::new();
+                h.insert("x-foo", "bar".parse().unwrap());
+                h
+            },
+            ..Default::default()
+        };
+
+        let res = p.to_response("body");
+        assert_eq!(res.version(), Version::HTTP_2);
+        assert_eq!(res.status(), StatusCode::CREATED);
+        assert_eq!(res.headers().get("x-foo").unwrap(), "bar");
+        assert_eq!(
+            res.extensions().get::<ReasonPhrase>().unwrap(),
+            &Some(b"MyCreated".to_vec())
+        );
+        assert_eq!(res.body(), &"body");
     }
 }
