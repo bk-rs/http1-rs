@@ -138,7 +138,7 @@ pub enum HeadParseError {
 }
 impl fmt::Display for HeadParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 impl error::Error for HeadParseError {}

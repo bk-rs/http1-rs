@@ -60,7 +60,7 @@ fn invalid_crlf_with_data_end() -> Result<(), Box<dyn Error>> {
         .unwrap();
     match err {
         BodyParseError::InvalidCRLF => {}
-        err => panic!("err not match, err {}", err),
+        err => panic!("err not match, err:{err}"),
     }
 
     Ok(())
@@ -80,7 +80,7 @@ fn invalid_crlf_with_all_end() -> Result<(), Box<dyn Error>> {
         .unwrap();
     match err {
         BodyParseError::InvalidCRLF => {}
-        err => panic!("err not match, err: {}", err),
+        err => panic!("err not match, err:{err}"),
     }
 
     Ok(())
