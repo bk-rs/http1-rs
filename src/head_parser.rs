@@ -1,9 +1,5 @@
-use std::{
-    cmp,
-    convert::TryInto,
-    error, fmt,
-    io::{self, BufRead, Take},
-};
+use core::cmp::min;
+use std::io::{BufRead, Error as IoError, ErrorKind as IoErrorKind, Take};
 
 use http::{
     header::{HeaderName, InvalidHeaderName, InvalidHeaderValue},
@@ -64,7 +60,7 @@ impl HeadParseConfig {
         self.get_header_max_len()
     }
     pub fn header_map_capacity(&self) -> usize {
-        cmp::min(self.get_header_max_len() * 6, self.get_headers_max_len())
+        min(self.get_header_max_len() * 6, self.get_headers_max_len())
     }
 
     pub fn set_header_max_len(&mut self, value: u16) -> &mut Self {
@@ -75,7 +71,7 @@ impl HeadParseConfig {
         self.header_max_len
     }
     pub fn set_headers_max_len(&mut self, value: u16) -> &mut Self {
-        self.headers_max_len = cmp::min(value, HEADERS_MAX_LEN as u16) as usize;
+        self.headers_max_len = min(value, HEADERS_MAX_LEN as u16) as usize;
         self
     }
     pub fn get_headers_max_len(&self) -> usize {
@@ -98,7 +94,7 @@ impl HeadParseConfig {
         self.method_max_len
     }
     pub fn set_uri_max_len(&mut self, value: u16) -> &mut Self {
-        self.uri_max_len = cmp::min(value, URI_MAX_LEN as u16) as usize;
+        self.uri_max_len = min(value, URI_MAX_LEN as u16) as usize;
         self
     }
     pub fn get_uri_max_len(&self) -> usize {
@@ -117,7 +113,7 @@ pub enum HeadParseOutput {
 
 #[derive(Debug)]
 pub enum HeadParseError {
-    ReadError(io::Error),
+    ReadError(IoError),
     TooLongHttpVersion,
     InvalidHttpVersion,
     TooLongHeader,
@@ -136,15 +132,15 @@ pub enum HeadParseError {
     TooLongUri,
     InvalidUri(InvalidUri),
 }
-impl fmt::Display for HeadParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl core::fmt::Display for HeadParseError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{self:?}")
     }
 }
-impl error::Error for HeadParseError {}
-impl From<HeadParseError> for io::Error {
-    fn from(err: HeadParseError) -> io::Error {
-        io::Error::new(io::ErrorKind::InvalidInput, err.to_string())
+impl std::error::Error for HeadParseError {}
+impl From<HeadParseError> for IoError {
+    fn from(err: HeadParseError) -> IoError {
+        IoError::new(IoErrorKind::InvalidInput, err.to_string())
     }
 }
 
@@ -393,15 +389,12 @@ pub trait HeadParser {
 mod tests {
     use super::*;
 
-    use std::{
-        error::Error,
-        io::{BufReader, Cursor, Read},
-    };
+    use std::io::{BufReader, Cursor, Read as _};
 
     use crate::request_head_parser::RequestHeadParser;
 
     #[test]
-    fn parse_header_with_multi_colon() -> Result<(), Box<dyn Error>> {
+    fn parse_header_with_multi_colon() -> Result<(), Box<dyn std::error::Error>> {
         let mut take = BufReader::new(Cursor::new(b"Foo: Bar:Bar\r\n")).take(0);
         let mut buf = Vec::new();
         let mut headers = HeaderMap::new();

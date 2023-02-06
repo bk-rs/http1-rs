@@ -1,7 +1,4 @@
-use std::{
-    io::{BufRead, Read},
-    str,
-};
+use std::io::{BufRead, Read as _};
 
 use crate::{
     body_parser::{BodyParseError, BodyParseOutput, BodyParser},
@@ -100,7 +97,7 @@ impl BodyParser for ChunkedBodyParser {
                     return Err(BodyParseError::InvalidCRLF);
                 }
                 let length_bytes = &self.length_buf[..n - end_bytes_len];
-                let length_str = str::from_utf8(length_bytes)
+                let length_str = core::str::from_utf8(length_bytes)
                     .map_err(|_| BodyParseError::InvalidChunksOfLength(None))?;
                 let length = u16::from_str_radix(length_str, 16)
                     .map_err(|err| BodyParseError::InvalidChunksOfLength(Some(err)))?;

@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    io::{BufReader, Cursor},
-};
+use std::io::{BufReader, Cursor};
 
 use http1_spec::{
     body_parser::{BodyParseOutput, BodyParser},
@@ -9,7 +6,7 @@ use http1_spec::{
 };
 
 #[test]
-fn simple() -> Result<(), Box<dyn Error>> {
+fn simple() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ContentLengthBodyParser::new();
     p.set_length(5);
 
@@ -24,7 +21,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn partial() -> Result<(), Box<dyn Error>> {
+fn partial() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ContentLengthBodyParser::new();
     p.set_length(10);
 

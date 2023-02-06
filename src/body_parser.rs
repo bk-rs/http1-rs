@@ -1,8 +1,5 @@
-use std::{
-    error, fmt,
-    io::{self, BufRead},
-    num,
-};
+use core::num::ParseIntError;
+use std::io::{BufRead, Error as IoError, ErrorKind as IoErrorKind};
 
 //
 //
@@ -15,21 +12,21 @@ pub enum BodyParseOutput {
 
 #[derive(Debug)]
 pub enum BodyParseError {
-    ReadError(io::Error),
+    ReadError(IoError),
     TooLongChunksOfLength,
-    InvalidChunksOfLength(Option<num::ParseIntError>),
+    InvalidChunksOfLength(Option<ParseIntError>),
     TooLongChunksOfCRLF,
     InvalidCRLF,
 }
-impl fmt::Display for BodyParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl core::fmt::Display for BodyParseError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{self:?}")
     }
 }
-impl error::Error for BodyParseError {}
-impl From<BodyParseError> for io::Error {
-    fn from(err: BodyParseError) -> io::Error {
-        io::Error::new(io::ErrorKind::InvalidInput, err.to_string())
+impl std::error::Error for BodyParseError {}
+impl From<BodyParseError> for IoError {
+    fn from(err: BodyParseError) -> IoError {
+        IoError::new(IoErrorKind::InvalidInput, err.to_string())
     }
 }
 

@@ -1,4 +1,4 @@
-use std::io;
+use std::io::Error as IoError;
 
 use http::{request, response, Request, Response};
 
@@ -6,7 +6,7 @@ use crate::ReasonPhrase;
 
 pub trait HeadRenderer<H: Head> {
     fn new() -> Self;
-    fn render(&self, head: H, buf: &mut Vec<u8>) -> io::Result<()>;
+    fn render(&self, head: H, buf: &mut Vec<u8>) -> Result<(), IoError>;
 }
 
 pub trait Head {}

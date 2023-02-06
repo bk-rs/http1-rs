@@ -1,8 +1,5 @@
-use std::{
-    error::Error,
-    io::{BufReader, Cursor},
-    str,
-};
+use core::str;
+use std::io::{BufReader, Cursor};
 
 use http1_spec::{
     body_parser::{BodyParseError, BodyParseOutput, BodyParser},
@@ -10,7 +7,7 @@ use http1_spec::{
 };
 
 #[test]
-fn simple() -> Result<(), Box<dyn Error>> {
+fn simple() -> Result<(), Box<dyn std::error::Error>> {
     // https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 
     let mut p = ChunkedBodyParser::new();
@@ -31,7 +28,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn partial() -> Result<(), Box<dyn Error>> {
+fn partial() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ChunkedBodyParser::new();
 
     let mut body_buf = vec![];
@@ -47,7 +44,7 @@ fn partial() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn invalid_crlf_with_data_end() -> Result<(), Box<dyn Error>> {
+fn invalid_crlf_with_data_end() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ChunkedBodyParser::new();
 
     let mut body_buf = vec![];
@@ -67,7 +64,7 @@ fn invalid_crlf_with_data_end() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn invalid_crlf_with_all_end() -> Result<(), Box<dyn Error>> {
+fn invalid_crlf_with_all_end() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ChunkedBodyParser::new();
 
     let mut body_buf = vec![];
@@ -87,7 +84,7 @@ fn invalid_crlf_with_all_end() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn full() -> Result<(), Box<dyn Error>> {
+fn full() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = ChunkedBodyParser::new();
 
     let mut body_buf = vec![];

@@ -1,4 +1,4 @@
-use std::io::{BufRead, Read};
+use std::io::{BufRead, Read as _};
 
 use crate::body_parser::{BodyParseError, BodyParseOutput, BodyParser};
 

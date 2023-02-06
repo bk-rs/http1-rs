@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 use http::{request::Parts, Request, Version};
 
@@ -15,7 +15,7 @@ impl HeadRenderer<Request<()>> for RequestHeadRenderer {
         Self::default()
     }
 
-    fn render(&self, head: Request<()>, buf: &mut Vec<u8>) -> io::Result<()> {
+    fn render(&self, head: Request<()>, buf: &mut Vec<u8>) -> Result<(), IoError> {
         let (parts, _) = head.into_parts();
         HeadRenderer::<Parts>::render(self, parts, buf)
     }
@@ -26,13 +26,13 @@ impl HeadRenderer<Parts> for RequestHeadRenderer {
         Self::default()
     }
 
-    fn render(&self, parts: Parts, buf: &mut Vec<u8>) -> io::Result<()> {
+    fn render(&self, parts: Parts, buf: &mut Vec<u8>) -> Result<(), IoError> {
         let version_bytes = match parts.version {
             Version::HTTP_10 => HTTP_VERSION_10,
             Version::HTTP_11 => HTTP_VERSION_11,
             Version::HTTP_2 => HTTP_VERSION_2,
             Version::HTTP_3 => HTTP_VERSION_3,
-            _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "unimplemented")),
+            _ => return Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented")),
         };
 
         buf.extend_from_slice(parts.method.as_str().as_bytes());

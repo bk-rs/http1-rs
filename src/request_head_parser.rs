@@ -1,4 +1,4 @@
-use std::io::{BufRead, Read};
+use std::io::{BufRead, Read as _};
 
 use http::{request::Parts as RequestParts, HeaderMap, HeaderValue, Method, Request, Uri, Version};
 

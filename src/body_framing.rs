@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 use http::{
     header::{CONTENT_LENGTH, TRANSFER_ENCODING},
@@ -19,14 +19,14 @@ pub enum BodyFraming {
 }
 
 impl BodyFraming {
-    pub fn update_content_length_value(&mut self, value: usize) -> io::Result<()> {
+    pub fn update_content_length_value(&mut self, value: usize) -> Result<(), IoError> {
         match self {
             Self::ContentLength(n) => {
                 *n = value;
                 Ok(())
             }
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
+            _ => Err(IoError::new(
+                IoErrorKind::InvalidInput,
                 "Not in ContentLength",
             )),
         }
@@ -34,19 +34,19 @@ impl BodyFraming {
 }
 
 pub trait BodyFramingDetector {
-    fn detect(&self) -> io::Result<BodyFraming>;
+    fn detect(&self) -> Result<BodyFraming, IoError>;
 }
 impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
-    fn detect(&self) -> io::Result<BodyFraming> {
+    fn detect(&self) -> Result<BodyFraming, IoError> {
         let (headers, version) = *self;
 
         if let Some(header_value) = headers.get(CONTENT_LENGTH) {
             let value_str = header_value
                 .to_str()
-                .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+                .map_err(|err| IoError::new(IoErrorKind::InvalidInput, err))?;
             let value: usize = value_str
                 .parse()
-                .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+                .map_err(|err| IoError::new(IoErrorKind::InvalidInput, err))?;
             return Ok(BodyFraming::ContentLength(value));
         }
 
@@ -66,10 +66,8 @@ impl BodyFramingDetector for (&HeaderMap<HeaderValue>, &Version) {
 mod tests {
     use super::*;
 
-    use std::error::Error;
-
     #[test]
-    fn detect() -> Result<(), Box<dyn Error>> {
+    fn detect() -> Result<(), Box<dyn std::error::Error>> {
         let mut header_map = HeaderMap::new();
 
         header_map.insert("Content-Length", "1".parse().unwrap());

@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    io::{BufReader, Cursor},
-};
+use std::io::{BufReader, Cursor};
 
 use http::{Method, Version};
 
@@ -11,7 +8,7 @@ use http1_spec::{
 };
 
 #[test]
-fn simple() -> Result<(), Box<dyn Error>> {
+fn simple() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(b"GET / HTTP/1.1\r\n\r\n")))?;
@@ -26,7 +23,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn version_http2() -> Result<(), Box<dyn Error>> {
+fn version_http2() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     // curl https://www.google.com/ -v
@@ -42,7 +39,7 @@ fn version_http2() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn version_http3() -> Result<(), Box<dyn Error>> {
+fn version_http3() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     // curl-quiche-http3 https://quic.aiortc.org/ -v --http3
@@ -58,7 +55,7 @@ fn version_http3() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn with_headers() -> Result<(), Box<dyn Error>> {
+fn with_headers() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let o = p.parse(&mut BufReader::new(Cursor::new(
@@ -77,7 +74,7 @@ fn with_headers() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn full() -> Result<(), Box<dyn Error>> {
+fn full() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = RequestHeadParser::with_config(Default::default());
 
     let bytes = b"PUT /x HTTP/1.0\r\nHost: foo.com\r\nCookie: \r\n\r\n";
