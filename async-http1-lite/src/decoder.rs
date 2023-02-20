@@ -180,6 +180,7 @@ where
         &mut self,
         stream: &mut S,
     ) -> Result<DecoderBody, IoError> {
+        #[allow(clippy::single_match)]
         match self.state {
             State::ReadBody(_) => {
                 self.read::<_, SLEEP>(stream).await?;
@@ -188,12 +189,8 @@ where
         }
 
         match &mut self.state {
-            State::Idle => {
-                return Ok(DecoderBody::Completed(Vec::<u8>::new()));
-            }
-            State::ReadingHead => {
-                return Err(IoError::new(IoErrorKind::Other, "state should is ReadBody"));
-            }
+            State::Idle => Ok(DecoderBody::Completed(Vec::<u8>::new())),
+            State::ReadingHead => Err(IoError::new(IoErrorKind::Other, "state should is ReadBody")),
             State::ReadBody(body_framing) => match body_framing.clone() {
                 BodyFraming::Neither => unreachable!(),
                 BodyFraming::ContentLength(content_length) => {
@@ -218,7 +215,7 @@ where
 
                             self.state = State::Idle;
 
-                            return Ok(DecoderBody::Completed(body_buf));
+                            Ok(DecoderBody::Completed(body_buf))
                         }
                         Ok(BodyParseOutput::Partial(n_parsed)) => {
                             self.offset_parsed += n_parsed;
@@ -230,13 +227,13 @@ where
 
                             body_framing.update_content_length_value(content_length - n_parsed)?;
 
-                            return Ok(DecoderBody::Partial(body_buf));
+                            Ok(DecoderBody::Partial(body_buf))
                         }
-                        Err(err) => return Err(err.into()),
+                        Err(err) => Err(err.into()),
                     }
                 }
                 BodyFraming::Chunked => {
-                    return Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented now"))
+                    Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented now"))
                 }
             },
         }

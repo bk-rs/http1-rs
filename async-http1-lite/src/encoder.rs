@@ -88,7 +88,7 @@ where
                 } else {
                     headers.insert(
                         CONTENT_LENGTH,
-                        HeaderValue::from_str(&format!("{}", n))
+                        HeaderValue::from_str(&format!("{n}"))
                             .map_err(|err| IoError::new(IoErrorKind::Other, err))?,
                     );
                     if version == &Version::HTTP_11 {
@@ -171,7 +171,7 @@ where
 
                     let bytes_len = bytes.len();
                     stream
-                        .write_with_timeout::<SLEEP>(&bytes, self.write_timeout)
+                        .write_with_timeout::<SLEEP>(bytes, self.write_timeout)
                         .await?;
 
                     match &body {

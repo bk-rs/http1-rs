@@ -28,14 +28,12 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .nth(3)
         .unwrap_or_else(|| env::var("URI").unwrap_or("/ip".to_owned()));
 
-    println!("client {} {} {}", domain, port, uri);
+    println!("client {domain} {port} {uri}");
 
     //
-    let addr = format!("{}:{}", domain, port);
+    let addr = format!("{domain}:{port}");
     let stream = TcpStream::connect(addr).await?;
-    let stream = TlsConnector::new()
-        .connect(domain.to_owned(), stream)
-        .await?;
+    let stream = TlsConnector::new().connect(&domain, stream).await?;
 
     //
     let mut stream: Http1ClientStream<_, Timer> = Http1ClientStream::new(stream);
@@ -48,15 +46,13 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .header("Accept", "*/*")
         .body(vec![])
         .unwrap();
-    println!("{:?}", request);
+    println!("{request:?}");
 
     stream.write_request(request).await?;
 
     let (response, _) = stream.read_response().await?;
 
-    println!("{:?}", response);
-
-    println!("done");
+    println!("{response:?}");
 
     Ok(())
 }

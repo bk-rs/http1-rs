@@ -28,10 +28,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .nth(3)
         .unwrap_or_else(|| env::var("URI").unwrap_or("/ip".to_owned()));
 
-    println!("client {} {} {}", domain, port, uri);
+    println!("client {domain} {port} {uri}");
 
     //
-    let addr = format!("{}:{}", domain, port);
+    let addr = format!("{domain}:{port}");
     let stream = TcpStream::connect(addr).await?;
     let stream = stream.compat();
 
@@ -46,15 +46,13 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .header("Accept", "*/*")
         .body(vec![])
         .unwrap();
-    println!("{:?}", request);
+    println!("{request:?}");
 
     stream.write_request(request).await?;
 
     let (response, _) = stream.read_response().await?;
 
-    println!("{:?}", response);
-
-    println!("done");
+    println!("{response:?}");
 
     Ok(())
 }

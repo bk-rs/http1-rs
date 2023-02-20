@@ -38,13 +38,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .nth(5)
         .unwrap_or_else(|| env::var("URI").unwrap_or("/ip".to_owned()));
 
-    println!(
-        "client_with_http_proxy {} {} {} {} {}",
-        proxy_domain, proxy_port, domain, port, uri
-    );
+    println!("client_with_http_proxy {proxy_domain} {proxy_port} {domain} {port} {uri}");
 
     //
-    let addr = format!("{}:{}", proxy_domain, proxy_port);
+    let addr = format!("{proxy_domain}:{proxy_port}");
     let stream = TcpStream::connect(addr).await?;
 
     //
@@ -52,20 +49,20 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let proxy_request = Request::builder()
         .method("CONNECT")
-        .uri(format!("{}:{}", domain, port))
+        .uri(format!("{domain}:{port}"))
         .version(Version::HTTP_11)
-        .header("Host", format!("{}:{}", domain, port))
+        .header("Host", format!("{domain}:{port}"))
         .header("User-Agent", "curl/7.71.1")
         .header("Proxy-Connection", "Keep-Alive")
         .body(vec![])
         .unwrap();
-    println!("{:?}", proxy_request);
+    println!("{proxy_request:?}");
 
     stream.write_request(proxy_request).await?;
 
     let (proxy_response, _) = stream.read_response().await?;
 
-    println!("{:?}", proxy_response);
+    println!("{proxy_response:?}");
 
     let request = Request::builder()
         .method("GET")
@@ -75,15 +72,13 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .header("Accept", "*/*")
         .body(vec![])
         .unwrap();
-    println!("{:?}", request);
+    println!("{request:?}");
 
     stream.write_request(request).await?;
 
     let (response, _) = stream.read_response().await?;
 
-    println!("{:?}", response);
-
-    println!("done");
+    println!("{response:?}");
 
     Ok(())
 }
