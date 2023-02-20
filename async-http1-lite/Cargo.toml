@@ -1,12 +1,12 @@
 [package]
 name = "async-http1-lite"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 description = "Asynchronous http1 stream."
 license = "Apache-2.0 OR MIT"
-repository = "https://github.com/bk-rs/async-http1-lite"
-homepage = "https://github.com/bk-rs/async-http1-lite"
+repository = "https://github.com/bk-rs/http1-rs"
+homepage = "https://github.com/bk-rs/http1-rs"
 documentation = "https://docs.rs/async-http1-lite"
 keywords = []
 categories = ["asynchronous"]

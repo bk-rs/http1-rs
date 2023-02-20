@@ -9,7 +9,7 @@ name = "async-http1-lite-demo-tokio_client"
 path = "src/client.rs"
 
 [dependencies]
-async-http1-lite = { version = "0.2", path = "../.." }
+async-http1-lite = { path = "../.." }
 async-sleep = { version = "0.4", features = ["impl_tokio"] }
 
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }

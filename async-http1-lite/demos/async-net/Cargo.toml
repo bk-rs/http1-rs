@@ -17,7 +17,7 @@ name = "async-http1-lite-demo-async-net_client_with_tls"
 path = "src/client_with_tls.rs"
 
 [dependencies]
-async-http1-lite = { version = "0.2", path = "../.." }
+async-http1-lite = { path = "../.." }
 async-sleep = { version = "0.4", features = ["impl_async_io"] }
 
 futures-lite = { version = "1" }
