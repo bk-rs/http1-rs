@@ -1,0 +1,31 @@
+[package]
+name = "async-http1-lite"
+version = "0.2.0"
+authors = ["vkill <vkill.net@gmail.com>"]
+edition = "2021"
+description = "Asynchronous http1 stream."
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/bk-rs/async-http1-lite"
+homepage = "https://github.com/bk-rs/async-http1-lite"
+documentation = "https://docs.rs/async-http1-lite"
+keywords = []
+categories = ["asynchronous"]
+readme = "README.md"
+
+[features]
+futures_io = ["futures-x-io/futures_util_io", "futures-x-io-timeoutable/futures_io"]
+tokio_io = ["futures-x-io/tokio_io_util", "futures-x-io-timeoutable/tokio_io"]
+
+[dependencies]
+http = { version = "0.2", default-features = false, features = [] }
+async-trait = { version = "0.1", default-features = false, features = [] }
+cfg-if = { version = "0.1", default-features = false, features = [] }
+http1-spec = { version = "0.1", default-features = false, features = [] }
+
+futures-x-io = { version = "0.1", default-features = false, features = [], optional = true }
+futures-x-io-timeoutable = { version = "0.1", default-features = false, features = [], optional = true }
+
+[dev-dependencies]
+futures-lite = { version = "0.1", default-features = false, features = ["std"] }
+
+tokio = { version = "0.2", default-features = false, features = ["io-util"] }

@@ -1,0 +1,13 @@
+[package]
+name = "async-http1-lite-demo-tokio"
+version = "0.1.0"
+authors = ["vkill <vkill.net@gmail.com>"]
+edition = "2021"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[dependencies]
+async-http1-lite = { path = "../..", version = "0.2", features = ["tokio_io"] }
+tokio = { version = "0.2", default-features = false, features = ["io-util", "net", "macros"] }
