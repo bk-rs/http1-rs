@@ -16,10 +16,11 @@ readme = "README.md"
 http1-spec = { version = "0.3", default-features = false, path = "../http1-spec" }
 
 http = { version = "0.2", default-features = false }
-futures-util = { version = "0.3", default-features = false, features = ["io"] }
+futures-util = { version = "0.3", default-features = false }
 async-sleep = { version = "0.4", default-features = false, features = ["rw"] }
 async-trait = { version = "0.1", default-features = false }
 
 [dev-dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["io"] }
+async-sleep = { version = "0.4", default-features = false, features = ["impl_async_io"] }
 futures-lite = { version = "1" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
