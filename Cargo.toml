@@ -1,4 +1,8 @@
 [workspace]
 members = [
+    # 
+    "async-http1-lite",
+    "async-http1-lite/demos/*",
+    # 
     "http1-spec",
 ]

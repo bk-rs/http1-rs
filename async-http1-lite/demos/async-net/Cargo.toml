@@ -1,0 +1,25 @@
+[package]
+name = "async-http1-lite-demo-async-net"
+version = "0.1.0"
+authors = ["vkill <vkill.net@gmail.com>"]
+edition = "2021"
+
+[[bin]]
+name = "async-http1-lite-demo-async-net_client"
+path = "src/client.rs"
+
+[[bin]]
+name = "async-http1-lite-demo-async-net_client_with_http_proxy"
+path = "src/client_with_http_proxy.rs"
+
+[[bin]]
+name = "async-http1-lite-demo-async-net_client_with_tls"
+path = "src/client_with_tls.rs"
+
+[dependencies]
+async-http1-lite = { version = "0.2", path = "../.." }
+async-sleep = { version = "0.4", features = ["impl_async_io"] }
+
+futures-lite = { version = "1" }
+async-net = { version = "1" }
+async-tls = { version = "0.12" }
