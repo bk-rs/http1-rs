@@ -7,7 +7,7 @@ use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 use async_sleep::{rw::AsyncWriteWithTimeoutExt as _, Sleepble};
 use async_trait::async_trait;
-use futures_util::AsyncWrite;
+use futures_io::AsyncWrite;
 use http::{
     header::{CONTENT_LENGTH, TRANSFER_ENCODING},
     request::Parts as RequestParts,

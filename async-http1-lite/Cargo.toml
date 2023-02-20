@@ -16,7 +16,7 @@ readme = "README.md"
 http1-spec = { version = "0.3", default-features = false, path = "../http1-spec" }
 
 http = { version = "0.2", default-features = false }
-futures-util = { version = "0.3", default-features = false }
+futures-io = { version = "0.3", default-features = false }
 async-sleep = { version = "0.4", default-features = false, features = ["rw"] }
 async-trait = { version = "0.1", default-features = false }
 

@@ -7,7 +7,7 @@ use std::io::{BufReader, Error as IoError, ErrorKind as IoErrorKind};
 
 use async_sleep::{rw::AsyncReadWithTimeoutExt as _, Sleepble};
 use async_trait::async_trait;
-use futures_util::AsyncRead;
+use futures_io::AsyncRead;
 use http::{Request, Response, Version};
 use http1_spec::{
     body_framing::{BodyFraming, BodyFramingDetector},
