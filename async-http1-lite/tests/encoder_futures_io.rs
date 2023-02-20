@@ -12,7 +12,7 @@ mod encoder_futures_io_tests {
     };
 
     #[test]
-    fn request_simple() -> io::Result<()> {
+    fn request_simple() -> Result<(), IoError> {
         block_on(async {
             let mut stream = Cursor::new(vec![]);
             let request = Request::builder()
@@ -37,7 +37,7 @@ mod encoder_futures_io_tests {
     }
 
     #[test]
-    fn request_with_body() -> io::Result<()> {
+    fn request_with_body() -> Result<(), IoError> {
         block_on(async {
             let mut stream = Cursor::new(vec![]);
             let request = Request::builder()

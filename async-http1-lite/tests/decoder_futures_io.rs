@@ -10,7 +10,7 @@ mod decoder_futures_io_tests {
     use async_http1_lite::{decoder::Http1RequestDecoder, stream::Http1StreamDecoder};
 
     #[test]
-    fn request_simple() -> io::Result<()> {
+    fn request_simple() -> Result<(), IoError> {
         block_on(async {
             let mut stream = Cursor::new(
                 "GET / HTTP/1.1\r\nHost: foo.com\r\n\r\nPOST /x HTTP/1.0\r\nHost: bar.com\r\n\r\n",

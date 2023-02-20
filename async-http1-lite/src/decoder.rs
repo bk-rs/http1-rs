@@ -1,11 +1,13 @@
-use std::cmp;
-use std::io::{self, BufReader};
-use std::ops::{Deref, DerefMut};
-use std::time::Duration;
+use core::{
+    cmp::min,
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
+use std::io::{BufReader, Error as IoError, ErrorKind as IoErrorKind};
 
+use async_sleep::{rw::AsyncReadWithTimeoutExt as _, Sleepble};
 use async_trait::async_trait;
-use futures_x_io::AsyncRead;
-use futures_x_io_timeoutable::AsyncReadWithTimeoutExt;
+use futures_util::AsyncRead;
 use http::{Request, Response, Version};
 use http1_spec::{
     body_framing::{BodyFraming, BodyFramingDetector},
@@ -17,8 +19,7 @@ use http1_spec::{
     ReasonPhrase,
 };
 
-use crate::body::DecoderBody;
-use crate::stream::Http1StreamDecoder;
+use crate::{body::DecoderBody, stream::Http1StreamDecoder};
 
 //
 //
@@ -74,22 +75,25 @@ where
     }
 
     //
-    async fn read<S: AsyncRead + Unpin>(&mut self, stream: &mut S) -> io::Result<()> {
+    async fn read<S: AsyncRead + Unpin, SLEEP: Sleepble>(
+        &mut self,
+        stream: &mut S,
+    ) -> Result<(), IoError> {
         if !self.require_read {
             return Ok(());
         }
 
         //
         if self.offset_read >= self.buf.len() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "override buf"));
+            return Err(IoError::new(IoErrorKind::InvalidInput, "override buf"));
         }
 
         //
         let n_read = match stream
-            .read_with_timeout(&mut self.buf[self.offset_read..], self.read_timeout)
+            .read_with_timeout::<SLEEP>(&mut self.buf[self.offset_read..], self.read_timeout)
             .await
         {
-            Ok(n) if n == 0 => return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "read 0")),
+            Ok(n) if n == 0 => return Err(IoError::new(IoErrorKind::UnexpectedEof, "read 0")),
             Ok(n) => n,
             Err(err) => return Err(err),
         };
@@ -104,16 +108,16 @@ where
         self.offset_parsed = 0;
     }
 
-    async fn read_head0<S: AsyncRead + Unpin>(
+    async fn read_head0<S: AsyncRead + Unpin, SLEEP: Sleepble>(
         &mut self,
         stream: &mut S,
-    ) -> io::Result<BodyFraming> {
+    ) -> Result<BodyFraming, IoError> {
         if self.state == State::Idle {
             self.rotate_offset();
         }
 
         let body_framing = loop {
-            self.read(stream).await?;
+            self.read::<_, SLEEP>(stream).await?;
 
             let mut buf_reader = BufReader::new(&self.buf[self.offset_parsed..self.offset_read]);
 
@@ -143,13 +147,13 @@ where
                         }
                         BodyFraming::Chunked => {
                             if version != &Version::HTTP_11 {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
+                                return Err(IoError::new(
+                                    IoErrorKind::InvalidInput,
                                     "Only valid in HTTP/1.1",
                                 ));
                             }
-                            return Err(io::Error::new(
-                                io::ErrorKind::InvalidInput,
+                            return Err(IoError::new(
+                                IoErrorKind::InvalidInput,
                                 "unimplemented now",
                             ));
                         }
@@ -172,13 +176,13 @@ where
         Ok(body_framing)
     }
 
-    async fn read_body0<S: AsyncRead + Unpin>(
+    async fn read_body0<S: AsyncRead + Unpin, SLEEP: Sleepble>(
         &mut self,
         stream: &mut S,
-    ) -> io::Result<DecoderBody> {
+    ) -> Result<DecoderBody, IoError> {
         match self.state {
             State::ReadBody(_) => {
-                self.read(stream).await?;
+                self.read::<_, SLEEP>(stream).await?;
             }
             _ => {}
         }
@@ -188,10 +192,7 @@ where
                 return Ok(DecoderBody::Completed(Vec::<u8>::new()));
             }
             State::ReadingHead => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "state should is ReadBody",
-                ));
+                return Err(IoError::new(IoErrorKind::Other, "state should is ReadBody"));
             }
             State::ReadBody(body_framing) => match body_framing.clone() {
                 BodyFraming::Neither => unreachable!(),
@@ -202,7 +203,7 @@ where
                     let mut buf_reader =
                         BufReader::new(&self.buf[self.offset_parsed..self.offset_read]);
                     let mut body_buf =
-                        vec![0u8; cmp::min(self.offset_read - self.offset_parsed, content_length)];
+                        vec![0u8; min(self.offset_read - self.offset_parsed, content_length)];
                     match self
                         .content_length_body_parser
                         .parse(&mut buf_reader, &mut body_buf)
@@ -235,10 +236,7 @@ where
                     }
                 }
                 BodyFraming::Chunked => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "unimplemented now",
-                    ))
+                    return Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented now"))
                 }
             },
         }
@@ -273,12 +271,13 @@ impl Http1RequestDecoder {
 }
 
 #[async_trait]
-impl<S> Http1StreamDecoder<S, Request<()>> for Http1RequestDecoder
+impl<S, SLEEP> Http1StreamDecoder<S, SLEEP, Request<()>> for Http1RequestDecoder
 where
     S: AsyncRead + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    async fn read_head(&mut self, stream: &mut S) -> io::Result<(Request<()>, BodyFraming)> {
-        let body_framing = self.read_head0(stream).await?;
+    async fn read_head(&mut self, stream: &mut S) -> Result<(Request<()>, BodyFraming), IoError> {
+        let body_framing = self.read_head0::<_, SLEEP>(stream).await?;
 
         let mut request = Request::new(());
         *request.method_mut() = self.inner.head_parser.method.to_owned();
@@ -288,8 +287,8 @@ where
 
         Ok((request, body_framing))
     }
-    async fn read_body(&mut self, stream: &mut S) -> io::Result<DecoderBody> {
-        self.read_body0(stream).await
+    async fn read_body(&mut self, stream: &mut S) -> Result<DecoderBody, IoError> {
+        self.read_body0::<_, SLEEP>(stream).await
     }
 
     fn set_read_timeout(&mut self, dur: Duration) {
@@ -325,15 +324,16 @@ impl Http1ResponseDecoder {
 }
 
 #[async_trait]
-impl<S> Http1StreamDecoder<S, (Response<()>, ReasonPhrase)> for Http1ResponseDecoder
+impl<S, SLEEP> Http1StreamDecoder<S, SLEEP, (Response<()>, ReasonPhrase)> for Http1ResponseDecoder
 where
     S: AsyncRead + Unpin + Send,
+    SLEEP: Sleepble,
 {
     async fn read_head(
         &mut self,
         stream: &mut S,
-    ) -> io::Result<((Response<()>, ReasonPhrase), BodyFraming)> {
-        let body_framing = self.read_head0(stream).await?;
+    ) -> Result<((Response<()>, ReasonPhrase), BodyFraming), IoError> {
+        let body_framing = self.read_head0::<_, SLEEP>(stream).await?;
 
         let mut response = Response::new(());
         *response.version_mut() = self.inner.head_parser.http_version.to_owned();
@@ -344,8 +344,8 @@ where
 
         Ok(((response, reason_phrase), body_framing))
     }
-    async fn read_body(&mut self, stream: &mut S) -> io::Result<DecoderBody> {
-        self.read_body0(stream).await
+    async fn read_body(&mut self, stream: &mut S) -> Result<DecoderBody, IoError> {
+        self.read_body0::<_, SLEEP>(stream).await
     }
 
     fn set_read_timeout(&mut self, dur: Duration) {

@@ -1,20 +1,20 @@
 /*
-cargo run -p async-http1-lite-demo-async-net --bin client httpbin.org 80 /ip
+cargo run -p async-http1-lite-demo-async-net --bin async-http1-lite-demo-async-net_client httpbin.org 80 /ip
 */
 
 use std::env;
-use std::io;
 
 use async_net::TcpStream;
+use async_sleep::impl_async_io::Timer;
 use futures_lite::future::block_on;
 
-use async_http1_lite::{Http1ClientStream, Request};
+use async_http1_lite::{http::Request, Http1ClientStream};
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     block_on(run())
 }
 
-async fn run() -> io::Result<()> {
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let domain = env::args()
         .nth(1)
         .unwrap_or_else(|| env::var("DOMAIN").unwrap_or("httpbin.org".to_owned()));
@@ -34,7 +34,7 @@ async fn run() -> io::Result<()> {
     let stream = TcpStream::connect(addr).await?;
 
     //
-    let mut stream = Http1ClientStream::new(stream);
+    let mut stream: Http1ClientStream<_, Timer> = Http1ClientStream::new(stream);
 
     let request = Request::builder()
         .method("GET")

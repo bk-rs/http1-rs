@@ -1,12 +1,15 @@
-use std::io;
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use std::time::Duration;
+use core::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
+};
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
+use async_sleep::Sleepble;
 use async_trait::async_trait;
-use futures_x_io::{AsyncRead, AsyncWrite};
+use futures_util::{AsyncRead, AsyncWrite};
 use http::{Request, Response};
 use http1_spec::{body_framing::BodyFraming, head_renderer::Head, ReasonPhrase};
 
@@ -18,21 +21,23 @@ use crate::encoder::{Http1RequestEncoder, Http1ResponseEncoder};
 //
 //
 #[async_trait]
-pub trait Http1StreamDecoder<S, H>
+pub trait Http1StreamDecoder<S, SLEEP, H>
 where
     S: AsyncRead + Unpin,
+    SLEEP: Sleepble,
     H: Head,
 {
-    async fn read_head(&mut self, stream: &mut S) -> io::Result<(H, BodyFraming)>;
-    async fn read_body(&mut self, stream: &mut S) -> io::Result<DecoderBody>;
+    async fn read_head(&mut self, stream: &mut S) -> Result<(H, BodyFraming), IoError>;
+    async fn read_body(&mut self, stream: &mut S) -> Result<DecoderBody, IoError>;
 
     fn set_read_timeout(&mut self, dur: Duration);
 }
 
 #[async_trait]
-pub trait Http1StreamEncoder<S, H>
+pub trait Http1StreamEncoder<S, SLEEP, H>
 where
     S: AsyncWrite + Unpin,
+    SLEEP: Sleepble,
     H: Head,
 {
     async fn write_head(
@@ -40,8 +45,8 @@ where
         stream: &mut S,
         head: H,
         body_framing: BodyFraming,
-    ) -> io::Result<()>;
-    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> io::Result<()>;
+    ) -> Result<(), IoError>;
+    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> Result<(), IoError>;
 
     fn set_write_timeout(&mut self, dur: Duration);
 }
@@ -49,25 +54,27 @@ where
 //
 //
 //
-pub struct Http1Stream<S, D, DH, E, EH>
+pub struct Http1Stream<S, SLEEP, D, DH, E, EH>
 where
     S: AsyncRead + AsyncWrite + Unpin,
-    D: Http1StreamDecoder<S, DH>,
+    SLEEP: Sleepble,
+    D: Http1StreamDecoder<S, SLEEP, DH>,
     DH: Head,
-    E: Http1StreamEncoder<S, EH>,
+    E: Http1StreamEncoder<S, SLEEP, EH>,
     EH: Head,
 {
     stream: S,
     decoder: D,
     encoder: E,
-    phantom: PhantomData<(DH, EH)>,
+    phantom: PhantomData<(SLEEP, DH, EH)>,
 }
-impl<S, D, DH, E, EH> Http1Stream<S, D, DH, E, EH>
+impl<S, SLEEP, D, DH, E, EH> Http1Stream<S, SLEEP, D, DH, E, EH>
 where
     S: AsyncRead + AsyncWrite + Unpin,
-    D: Http1StreamDecoder<S, DH>,
+    SLEEP: Sleepble,
+    D: Http1StreamDecoder<S, SLEEP, DH>,
     DH: Head,
-    E: Http1StreamEncoder<S, EH>,
+    E: Http1StreamEncoder<S, SLEEP, EH>,
     EH: Head,
 {
     pub(crate) fn new(stream: S, decoder: D, encoder: E) -> Self {
@@ -89,21 +96,21 @@ where
     }
 
     //
-    pub async fn write_head(&mut self, head: EH, body_framing: BodyFraming) -> io::Result<()> {
+    pub async fn write_head(&mut self, head: EH, body_framing: BodyFraming) -> Result<(), IoError> {
         self.encoder
             .write_head(&mut self.stream, head, body_framing)
             .await
     }
 
-    pub async fn write_body(&mut self, body: EncoderBody) -> io::Result<()> {
+    pub async fn write_body(&mut self, body: EncoderBody) -> Result<(), IoError> {
         self.encoder.write_body(&mut self.stream, body).await
     }
 
     //
-    pub async fn read_head(&mut self) -> io::Result<(DH, BodyFraming)> {
+    pub async fn read_head(&mut self) -> Result<(DH, BodyFraming), IoError> {
         self.decoder.read_head(&mut self.stream).await
     }
-    pub async fn read_body(&mut self) -> io::Result<DecoderBody> {
+    pub async fn read_body(&mut self) -> Result<DecoderBody, IoError> {
         self.decoder.read_body(&mut self.stream).await
     }
 }
@@ -111,40 +118,45 @@ where
 //
 //
 //
-pub type Http1ClientStreamInner<S> = Http1Stream<
+pub type Http1ClientStreamInner<S, SLEEP> = Http1Stream<
     S,
+    SLEEP,
     Http1ResponseDecoder,
     (Response<()>, ReasonPhrase),
     Http1RequestEncoder,
     Request<()>,
 >;
-pub struct Http1ClientStream<S>
+pub struct Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    inner: Http1ClientStreamInner<S>,
+    inner: Http1ClientStreamInner<S, SLEEP>,
 }
-impl<S> Deref for Http1ClientStream<S>
+impl<S, SLEEP> Deref for Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    type Target = Http1ClientStreamInner<S>;
+    type Target = Http1ClientStreamInner<S, SLEEP>;
 
-    fn deref(&self) -> &Http1ClientStreamInner<S> {
+    fn deref(&self) -> &Http1ClientStreamInner<S, SLEEP> {
         &self.inner
     }
 }
-impl<S> DerefMut for Http1ClientStream<S>
+impl<S, SLEEP> DerefMut for Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    fn deref_mut(&mut self) -> &mut Http1ClientStreamInner<S> {
+    fn deref_mut(&mut self) -> &mut Http1ClientStreamInner<S, SLEEP> {
         &mut self.inner
     }
 }
-impl<S> Http1ClientStream<S>
+impl<S, SLEEP> Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
     pub fn new(stream: S) -> Self {
         Self::with(
@@ -165,14 +177,14 @@ where
     pub fn get_mut(&mut self) -> &mut S {
         &mut self.inner.stream
     }
-    pub fn into_inner(self) -> io::Result<S> {
+    pub fn into_inner(self) -> Result<S, IoError> {
         if self.decoder.has_unparsed_bytes() {
-            return Err(io::Error::new(io::ErrorKind::Other, "has unparsed bytes"));
+            return Err(IoError::new(IoErrorKind::Other, "has unparsed bytes"));
         }
         Ok(self.inner.stream)
     }
 
-    pub async fn write_request(&mut self, request: Request<Vec<u8>>) -> io::Result<()> {
+    pub async fn write_request(&mut self, request: Request<Vec<u8>>) -> Result<(), IoError> {
         let (parts, body) = request.into_parts();
         let head = Request::from_parts(parts, ());
 
@@ -190,7 +202,7 @@ where
         Ok(())
     }
 
-    pub async fn read_response(&mut self) -> io::Result<(Response<Vec<u8>>, ReasonPhrase)> {
+    pub async fn read_response(&mut self) -> Result<(Response<Vec<u8>>, ReasonPhrase), IoError> {
         let ((response, reason_phrase), body_framing) = self.read_head().await?;
 
         let mut body = Vec::new();
@@ -217,79 +229,84 @@ where
     }
 }
 
-impl<S> AsyncRead for Http1ClientStream<S>
+impl<S, SLEEP> AsyncRead for Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble + Unpin,
 {
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context,
         buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+    ) -> Poll<Result<usize, IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_read(cx, buf)
     }
 }
 
-impl<S> AsyncWrite for Http1ClientStream<S>
+impl<S, SLEEP> AsyncWrite for Http1ClientStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble + Unpin,
 {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        buf: &[u8],
+    ) -> Poll<Result<usize, IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_write(cx, buf)
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_flush(cx)
     }
 
-    #[cfg(all(feature = "futures_io", not(feature = "tokio_io")))]
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_close(cx)
-    }
-
-    #[cfg(all(not(feature = "futures_io"), feature = "tokio_io"))]
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.get_mut().stream).poll_shutdown(cx)
     }
 }
 
 //
 //
 //
-pub type Http1ServerStreamInner<S> = Http1Stream<
+pub type Http1ServerStreamInner<S, SLEEP> = Http1Stream<
     S,
+    SLEEP,
     Http1RequestDecoder,
     Request<()>,
     Http1ResponseEncoder,
     (Response<()>, ReasonPhrase),
 >;
-pub struct Http1ServerStream<S>
+pub struct Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    inner: Http1ServerStreamInner<S>,
+    inner: Http1ServerStreamInner<S, SLEEP>,
 }
-impl<S> Deref for Http1ServerStream<S>
+impl<S, SLEEP> Deref for Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    type Target = Http1ServerStreamInner<S>;
+    type Target = Http1ServerStreamInner<S, SLEEP>;
 
-    fn deref(&self) -> &Http1ServerStreamInner<S> {
+    fn deref(&self) -> &Http1ServerStreamInner<S, SLEEP> {
         &self.inner
     }
 }
-impl<S> DerefMut for Http1ServerStream<S>
+impl<S, SLEEP> DerefMut for Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
-    fn deref_mut(&mut self) -> &mut Http1ServerStreamInner<S> {
+    fn deref_mut(&mut self) -> &mut Http1ServerStreamInner<S, SLEEP> {
         &mut self.inner
     }
 }
-impl<S> Http1ServerStream<S>
+impl<S, SLEEP> Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
     pub fn new(stream: S) -> Self {
         Self::with(
@@ -310,9 +327,9 @@ where
     pub fn get_mut(&mut self) -> &mut S {
         &mut self.inner.stream
     }
-    pub fn into_inner(self) -> io::Result<S> {
+    pub fn into_inner(self) -> Result<S, IoError> {
         if self.decoder.has_unparsed_bytes() {
-            return Err(io::Error::new(io::ErrorKind::Other, "has unparsed bytes"));
+            return Err(IoError::new(IoErrorKind::Other, "has unparsed bytes"));
         }
         Ok(self.inner.stream)
     }
@@ -321,7 +338,7 @@ where
         &mut self,
         response: Response<Vec<u8>>,
         reason_phrase: ReasonPhrase,
-    ) -> io::Result<()> {
+    ) -> Result<(), IoError> {
         let (parts, body) = response.into_parts();
         let head = Response::from_parts(parts, ());
 
@@ -341,7 +358,7 @@ where
         Ok(())
     }
 
-    pub async fn read_request(&mut self) -> io::Result<Request<Vec<u8>>> {
+    pub async fn read_request(&mut self) -> Result<Request<Vec<u8>>, IoError> {
         let (request, body_framing) = self.read_head().await?;
 
         let mut body = Vec::new();
@@ -368,38 +385,38 @@ where
     }
 }
 
-impl<S> AsyncRead for Http1ServerStream<S>
+impl<S, SLEEP> AsyncRead for Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble + Unpin,
 {
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context,
         buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+    ) -> Poll<Result<usize, IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_read(cx, buf)
     }
 }
 
-impl<S> AsyncWrite for Http1ServerStream<S>
+impl<S, SLEEP> AsyncWrite for Http1ServerStream<S, SLEEP>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble + Unpin,
 {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        buf: &[u8],
+    ) -> Poll<Result<usize, IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_write(cx, buf)
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_flush(cx)
     }
 
-    #[cfg(all(feature = "futures_io", not(feature = "tokio_io")))]
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), IoError>> {
         Pin::new(&mut self.get_mut().stream).poll_close(cx)
-    }
-
-    #[cfg(all(not(feature = "futures_io"), feature = "tokio_io"))]
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.get_mut().stream).poll_shutdown(cx)
     }
 }

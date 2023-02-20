@@ -5,9 +5,12 @@ authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 
 [[bin]]
-name = "client"
+name = "async-http1-lite-demo-tokio_client"
 path = "src/client.rs"
 
 [dependencies]
-async-http1-lite = { path = "../..", version = "0.2", features = ["tokio_io"] }
-tokio = { version = "0.2", default-features = false, features = ["io-util", "net", "macros"] }
+async-http1-lite = { version = "0.2", path = "../.." }
+async-sleep = { version = "0.4", features = ["impl_tokio"] }
+
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+tokio-util = { version = "0.7", features = ["compat"] }

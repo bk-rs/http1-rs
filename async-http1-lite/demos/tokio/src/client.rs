@@ -1,20 +1,21 @@
 /*
-cargo run -p async-http1-lite-demo-tokio --bin client httpbin.org 80 /ip
+cargo run -p async-http1-lite-demo-tokio --bin async-http1-lite-demo-tokio_client httpbin.org 80 /ip
 */
 
 use std::env;
-use std::io;
 
 use tokio::net::TcpStream;
 
-use async_http1_lite::{Http1ClientStream, Request};
+use async_http1_lite::{http::Request, Http1ClientStream};
+use async_sleep::impl_tokio::Sleep;
+use tokio_util::compat::TokioAsyncReadCompatExt as _;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     run().await
 }
 
-async fn run() -> io::Result<()> {
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let domain = env::args()
         .nth(1)
         .unwrap_or_else(|| env::var("DOMAIN").unwrap_or("httpbin.org".to_owned()));
@@ -32,9 +33,10 @@ async fn run() -> io::Result<()> {
     //
     let addr = format!("{}:{}", domain, port);
     let stream = TcpStream::connect(addr).await?;
+    let stream = stream.compat();
 
     //
-    let mut stream = Http1ClientStream::new(stream);
+    let mut stream: Http1ClientStream<_, Sleep> = Http1ClientStream::new(stream);
 
     let request = Request::builder()
         .method("GET")

@@ -13,7 +13,7 @@ mod stream_futures_io_tests {
         S: AsyncRead + AsyncWrite;
 
     #[test]
-    fn client_get_ref() -> io::Result<()> {
+    fn client_get_ref() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let stream = Http1ClientStream::new(cursor);
@@ -24,7 +24,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn client_get_mut() -> io::Result<()> {
+    fn client_get_mut() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let mut stream = Http1ClientStream::new(cursor);
@@ -35,7 +35,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn client_into_inner() -> io::Result<()> {
+    fn client_into_inner() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let stream = Http1ClientStream::new(cursor);
@@ -46,7 +46,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn client_read_and_write() -> io::Result<()> {
+    fn client_read_and_write() -> Result<(), IoError> {
         block_on(async {
             let cursor = Cursor::new(b"foo".to_vec());
 
@@ -64,7 +64,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn client_asyncread_asyncwrite_bound() -> io::Result<()> {
+    fn client_asyncread_asyncwrite_bound() -> Result<(), IoError> {
         let cursor = Cursor::new(b"".to_vec());
         let stream = Http1ClientStream::new(cursor);
         MyStream(stream);
@@ -73,7 +73,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn server_get_ref() -> io::Result<()> {
+    fn server_get_ref() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let stream = Http1ServerStream::new(cursor);
@@ -84,7 +84,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn server_get_mut() -> io::Result<()> {
+    fn server_get_mut() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let mut stream = Http1ServerStream::new(cursor);
@@ -95,7 +95,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn server_into_inner() -> io::Result<()> {
+    fn server_into_inner() -> Result<(), IoError> {
         let cursor = Cursor::new(vec![]);
 
         let stream = Http1ServerStream::new(cursor);
@@ -106,7 +106,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn server_read_and_write() -> io::Result<()> {
+    fn server_read_and_write() -> Result<(), IoError> {
         block_on(async {
             let cursor = Cursor::new(b"foo".to_vec());
 
@@ -124,7 +124,7 @@ mod stream_futures_io_tests {
     }
 
     #[test]
-    fn server_asyncread_asyncwrite_bound() -> io::Result<()> {
+    fn server_asyncread_asyncwrite_bound() -> Result<(), IoError> {
         let cursor = Cursor::new(b"".to_vec());
         let stream = Http1ServerStream::new(cursor);
         MyStream(stream);

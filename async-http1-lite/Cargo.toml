@@ -12,20 +12,14 @@ keywords = []
 categories = ["asynchronous"]
 readme = "README.md"
 
-[features]
-futures_io = ["futures-x-io/futures_util_io", "futures-x-io-timeoutable/futures_io"]
-tokio_io = ["futures-x-io/tokio_io_util", "futures-x-io-timeoutable/tokio_io"]
-
 [dependencies]
-http = { version = "0.2", default-features = false, features = [] }
-async-trait = { version = "0.1", default-features = false, features = [] }
-cfg-if = { version = "0.1", default-features = false, features = [] }
-http1-spec = { version = "0.1", default-features = false, features = [] }
+http1-spec = { version = "0.3", default-features = false, path = "../http1-spec" }
 
-futures-x-io = { version = "0.1", default-features = false, features = [], optional = true }
-futures-x-io-timeoutable = { version = "0.1", default-features = false, features = [], optional = true }
+http = { version = "0.2", default-features = false }
+futures-util = { version = "0.3", default-features = false, features = ["io"] }
+async-sleep = { version = "0.4", default-features = false, features = ["rw"] }
+async-trait = { version = "0.1", default-features = false }
 
 [dev-dependencies]
-futures-lite = { version = "0.1", default-features = false, features = ["std"] }
-
-tokio = { version = "0.2", default-features = false, features = ["io-util"] }
+futures-lite = { version = "1" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

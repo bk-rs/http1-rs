@@ -1,16 +1,19 @@
-use std::io;
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-use std::time::Duration;
+use core::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
+use async_sleep::{rw::AsyncWriteWithTimeoutExt as _, Sleepble};
 use async_trait::async_trait;
-use futures_x_io::AsyncWrite;
-use futures_x_io_timeoutable::AsyncWriteWithTimeoutExt;
+use futures_util::AsyncWrite;
 use http::{
     header::{CONTENT_LENGTH, TRANSFER_ENCODING},
+    request::Parts as RequestParts,
+    response::Parts as ResponseParts,
     HeaderMap, HeaderValue, Request, Response, Version,
 };
-use http::{request::Parts as RequestParts, response::Parts as ResponseParts};
 use http1_spec::{
     body_framing::BodyFraming,
     head_renderer::{Head, HeadRenderer},
@@ -19,8 +22,7 @@ use http1_spec::{
     ReasonPhrase, CHUNKED,
 };
 
-use crate::body::EncoderBody;
-use crate::stream::Http1StreamEncoder;
+use crate::{body::EncoderBody, stream::Http1StreamEncoder};
 
 //
 //
@@ -73,7 +75,7 @@ where
         headers: &mut HeaderMap<HeaderValue>,
         version: &Version,
         body_framing: &BodyFraming,
-    ) -> io::Result<()> {
+    ) -> Result<(), IoError> {
         match body_framing {
             BodyFraming::Neither => {
                 headers.remove(CONTENT_LENGTH);
@@ -87,7 +89,7 @@ where
                     headers.insert(
                         CONTENT_LENGTH,
                         HeaderValue::from_str(&format!("{}", n))
-                            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?,
+                            .map_err(|err| IoError::new(IoErrorKind::Other, err))?,
                     );
                     if version == &Version::HTTP_11 {
                         if let Some(header_value) = headers.get(&TRANSFER_ENCODING) {
@@ -100,16 +102,13 @@ where
             }
             BodyFraming::Chunked => {
                 if version != &Version::HTTP_11 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "unimplemented now",
-                    ));
+                    return Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented now"));
                 }
                 headers.remove(CONTENT_LENGTH);
                 headers.insert(
                     TRANSFER_ENCODING,
                     HeaderValue::from_str(CHUNKED)
-                        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?,
+                        .map_err(|err| IoError::new(IoErrorKind::Other, err))?,
                 );
             }
         }
@@ -117,25 +116,28 @@ where
         Ok(())
     }
 
-    fn encode_head(&mut self, head: H) -> io::Result<()> {
+    fn encode_head(&mut self, head: H) -> Result<(), IoError> {
         self.head_renderer.render(head, &mut self.buf)
     }
 
-    async fn write_head0<S: AsyncWrite + Unpin>(&self, stream: &mut S) -> io::Result<usize> {
+    async fn write_head0<S: AsyncWrite + Unpin, SLEEP: Sleepble>(
+        &self,
+        stream: &mut S,
+    ) -> Result<usize, IoError> {
         stream
-            .write_with_timeout(&self.buf, self.write_timeout)
+            .write_with_timeout::<SLEEP>(&self.buf, self.write_timeout)
             .await
     }
 
-    async fn write_body0<S: AsyncWrite + Unpin>(
+    async fn write_body0<S: AsyncWrite + Unpin, SLEEP: Sleepble>(
         &mut self,
         stream: &mut S,
         body: EncoderBody,
-    ) -> io::Result<()> {
+    ) -> Result<(), IoError> {
         match &mut self.state {
             State::Idle => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
+                return Err(IoError::new(
+                    IoErrorKind::Other,
                     "state should is WriteBody",
                 ));
             }
@@ -149,8 +151,8 @@ where
                     let bytes = match &body {
                         EncoderBody::Completed(bytes) => {
                             if bytes.len() != content_length {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
+                                return Err(IoError::new(
+                                    IoErrorKind::InvalidInput,
                                     "bytes len mismatch",
                                 ));
                             }
@@ -158,8 +160,8 @@ where
                         }
                         EncoderBody::Partial(bytes) => {
                             if bytes.len() >= content_length {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
+                                return Err(IoError::new(
+                                    IoErrorKind::InvalidInput,
                                     "bytes len mismatch",
                                 ));
                             }
@@ -169,7 +171,7 @@ where
 
                     let bytes_len = bytes.len();
                     stream
-                        .write_with_timeout(&bytes, self.write_timeout)
+                        .write_with_timeout::<SLEEP>(&bytes, self.write_timeout)
                         .await?;
 
                     match &body {
@@ -182,10 +184,7 @@ where
                     };
                 }
                 BodyFraming::Chunked => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "unimplemented now",
-                    ))
+                    return Err(IoError::new(IoErrorKind::InvalidInput, "unimplemented now"))
                 }
             },
         }
@@ -222,18 +221,19 @@ impl Http1RequestEncoder {
 }
 
 #[async_trait]
-impl<S> Http1StreamEncoder<S, Request<()>> for Http1RequestEncoder
+impl<S, SLEEP> Http1StreamEncoder<S, SLEEP, Request<()>> for Http1RequestEncoder
 where
     S: AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
     async fn write_head(
         &mut self,
         stream: &mut S,
         head: Request<()>,
         body_framing: BodyFraming,
-    ) -> io::Result<()> {
+    ) -> Result<(), IoError> {
         if self.state != State::Idle {
-            return Err(io::Error::new(io::ErrorKind::Other, "state should is Idle"));
+            return Err(IoError::new(IoErrorKind::Other, "state should is Idle"));
         }
 
         self.buf.clear();
@@ -244,7 +244,7 @@ where
 
         self.encode_head(parts)?;
 
-        self.write_head0(stream).await?;
+        self.write_head0::<_, SLEEP>(stream).await?;
 
         match body_framing {
             BodyFraming::Neither => {
@@ -260,8 +260,8 @@ where
 
         Ok(())
     }
-    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> io::Result<()> {
-        self.write_body0(stream, body).await
+    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> Result<(), IoError> {
+        self.write_body0::<_, SLEEP>(stream, body).await
     }
 
     fn set_write_timeout(&mut self, dur: Duration) {
@@ -298,18 +298,19 @@ impl Http1ResponseEncoder {
 }
 
 #[async_trait]
-impl<S> Http1StreamEncoder<S, (Response<()>, ReasonPhrase)> for Http1ResponseEncoder
+impl<S, SLEEP> Http1StreamEncoder<S, SLEEP, (Response<()>, ReasonPhrase)> for Http1ResponseEncoder
 where
     S: AsyncWrite + Unpin + Send,
+    SLEEP: Sleepble,
 {
     async fn write_head(
         &mut self,
         stream: &mut S,
         head: (Response<()>, ReasonPhrase),
         body_framing: BodyFraming,
-    ) -> io::Result<()> {
+    ) -> Result<(), IoError> {
         if self.state != State::Idle {
-            return Err(io::Error::new(io::ErrorKind::Other, "state should is Idle"));
+            return Err(IoError::new(IoErrorKind::Other, "state should is Idle"));
         }
 
         self.buf.clear();
@@ -321,7 +322,7 @@ where
 
         self.encode_head((parts, reason_phrase))?;
 
-        self.write_head0(stream).await?;
+        self.write_head0::<_, SLEEP>(stream).await?;
 
         match body_framing {
             BodyFraming::Neither => {
@@ -337,8 +338,8 @@ where
 
         Ok(())
     }
-    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> io::Result<()> {
-        self.write_body0(stream, body).await
+    async fn write_body(&mut self, stream: &mut S, body: EncoderBody) -> Result<(), IoError> {
+        self.write_body0::<_, SLEEP>(stream, body).await
     }
 
     fn set_write_timeout(&mut self, dur: Duration) {
