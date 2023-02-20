@@ -42,7 +42,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .method("GET")
         .uri(uri)
         .header("Host", domain)
-        .header("User-Agent", "curl/7.71.1")
+        .header("User-Agent", "async-http1-lite")
         .header("Accept", "*/*")
         .body(vec![])
         .unwrap();
@@ -52,7 +52,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let (response, _) = stream.read_response().await?;
 
-    println!("{response:?}");
+    let (response_parts, response_body) = response.into_parts();
+    println!("{response_parts:?}");
+    println!("{:?}", String::from_utf8(response_body));
 
     Ok(())
 }
