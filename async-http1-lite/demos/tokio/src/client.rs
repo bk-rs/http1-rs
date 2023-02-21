@@ -1,5 +1,5 @@
 /*
-cargo run -p async-http1-lite-demo-tokio --bin async-http1-lite-demo-tokio_client httpbin.org 80 /ip
+cargo run -p async-http1-lite-demo-tokio --bin async_http1_lite_demo_tokio_client httpbin.org 80 /ip
 */
 
 use std::env;

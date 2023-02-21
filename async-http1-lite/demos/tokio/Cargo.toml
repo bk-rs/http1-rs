@@ -5,7 +5,7 @@ authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 
 [[bin]]
-name = "async-http1-lite-demo-tokio_client"
+name = "async_http1_lite_demo_tokio_client"
 path = "src/client.rs"
 
 [dependencies]

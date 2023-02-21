@@ -5,15 +5,15 @@ authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 
 [[bin]]
-name = "async-http1-lite-demo-async-net_client"
+name = "async_http1_lite_demo_async_net_client"
 path = "src/client.rs"
 
 [[bin]]
-name = "async-http1-lite-demo-async-net_client_with_http_proxy"
+name = "async_http1_lite_demo_async_net_client_with_http_proxy"
 path = "src/client_with_http_proxy.rs"
 
 [[bin]]
-name = "async-http1-lite-demo-async-net_client_with_tls"
+name = "async_http1_lite_demo_async_net_client_with_tls"
 path = "src/client_with_tls.rs"
 
 [dependencies]

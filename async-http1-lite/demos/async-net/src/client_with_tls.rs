@@ -1,5 +1,5 @@
 /*
-cargo run -p async-http1-lite-demo-async-net --bin async-http1-lite-demo-async-net_client_with_tls httpbin.org 443 /ip
+cargo run -p async-http1-lite-demo-async-net --bin async_http1_lite_demo_async_net_client_with_tls httpbin.org 443 /ip
 */
 
 use std::env;
