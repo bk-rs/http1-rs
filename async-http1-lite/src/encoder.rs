@@ -123,10 +123,19 @@ where
     async fn write_head0<S: AsyncWrite + Unpin, SLEEP: Sleepble>(
         &self,
         stream: &mut S,
-    ) -> Result<usize, IoError> {
-        stream
-            .write_with_timeout::<SLEEP>(&self.buf, self.write_timeout)
-            .await
+    ) -> Result<(), IoError> {
+        let mut n_write = 0;
+        while !self.buf[n_write..].is_empty() {
+            let n = stream
+                .write_with_timeout::<SLEEP>(&self.buf[n_write..], self.write_timeout)
+                .await?;
+            n_write += n;
+
+            if n == 0 {
+                return Err(IoErrorKind::WriteZero.into());
+            }
+        }
+        Ok(())
     }
 
     async fn write_body0<S: AsyncWrite + Unpin, SLEEP: Sleepble>(
@@ -168,11 +177,19 @@ where
                             bytes
                         }
                     };
-
                     let bytes_len = bytes.len();
-                    stream
-                        .write_with_timeout::<SLEEP>(bytes, self.write_timeout)
-                        .await?;
+
+                    let mut n_write = 0;
+                    while !bytes[n_write..].is_empty() {
+                        let n = stream
+                            .write_with_timeout::<SLEEP>(&bytes[n_write..], self.write_timeout)
+                            .await?;
+                        n_write += n;
+
+                        if n == 0 {
+                            return Err(IoErrorKind::WriteZero.into());
+                        }
+                    }
 
                     match &body {
                         EncoderBody::Completed(_) => {
